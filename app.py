@@ -49,6 +49,10 @@ def send_email(files):
             )
         server.send_message(msg)
 
+def rename_file_flag(file: Path):
+    file.rename(file.with_name('ENVIADO.txt'))
+    
+
 contracts = []
 
 for modality in basepath.iterdir(): # Dispensas, aditivos, inex
@@ -62,6 +66,7 @@ for modality in basepath.iterdir(): # Dispensas, aditivos, inex
         enviar_file = process_folder / 'ENVIAR.txt'
 
         if enviar_file.exists():
+            rename_file_flag(enviar_file)
             for file in process_folder.iterdir(): # Acessar a pasta e enviar o contrato
                 validated = validate_file(file)
                 if validated:

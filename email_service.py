@@ -9,6 +9,7 @@ class EmailService:
     def __init__(self):
         self.email_from = CREDENTIALS['email']
         self.email_to = CREDENTIALS['destino']
+        self.password_app = CREDENTIALS['senha_app']
 
     def format_email(self, files: list):
         self.msg = EmailMessage()
@@ -20,7 +21,7 @@ class EmailService:
                 Segue em anexo o(s) contrato(s) feitos no dia de hoje.
 
                 Atenciosamente,
-                Christian
+                Christian - Departamento de Licitações e Contratos
                 """)
 
         for file in files:
@@ -37,7 +38,7 @@ class EmailService:
         with SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
             server.login(
-                CREDENTIALS['email'], 
-                CREDENTIALS['senha_app']
+                self.email_from, 
+                self.password_app,
                 )
             server.send_message(self.msg)

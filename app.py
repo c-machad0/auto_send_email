@@ -1,4 +1,4 @@
-from config import BASE_DIR, CREDENTIALS
+from config import BASE_DIR
 from email_service import EmailService
 from utils import validate_file, rename_file_flag
 
@@ -31,7 +31,7 @@ class App:
 
     def run_app(self):
         self.navigation()
-        
+
         try:
             if self.contracts:
                 self.sender.format_email(self.contracts)

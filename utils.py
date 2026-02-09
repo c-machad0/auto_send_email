@@ -1,18 +1,19 @@
 from pathlib import Path
-from config import regex
+from config import regex_read, regex_sent
 
-def validate_file(file: Path):
-    if not file.is_file():
-        return None
+def validate_file(file: Path) -> bool:
+    return (
+        file.is_file()
+        and file.suffix.lower() == '.pdf'
+        and regex_read.fullmatch(file.stem)
+    )
 
-    if not file.suffix.lower() == '.pdf':
-        return None
-    
-    if not regex.fullmatch(file.stem):
-        return None
-    
-    return file
 
-def rename_file_flag(file: Path):
-    file.rename(file.with_name('ENVIADO.txt'))
+def rename_sent_file(file: Path):
+    filename = file.stem
+
+    if regex_read.fullmatch(filename) and '[ENVIADO]' not in filename:
+        new_filename = f'{filename} [ENVIADO]{file.suffix}'
+        file.rename(file.with_name(new_filename))
+
 

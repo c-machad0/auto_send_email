@@ -178,4 +178,4 @@ pyrightconfig.json
 # Arquivos auxiliares
 fluxo.txt
 reviews.txt
-rename_teste.py
+rollback_file.py

@@ -1,6 +1,6 @@
 from config import BASE_DIR
 from email_service import EmailService
-from utils import validate_file, rename_file_flag
+from utils import validate_file, rename_sent_file
 
 
 class App:
@@ -12,6 +12,8 @@ class App:
         self.contracts = []
 
     def navigation(self):
+        files_to_rename = []
+
         for modality in self.basepath.iterdir(): # Dispensas, aditivos, inex
             if not modality.is_dir():
                 continue
@@ -20,22 +22,26 @@ class App:
                 if not process_folder.is_dir():
                     continue
 
-                enviar_file = process_folder / 'ENVIAR.txt'
+                for file in process_folder.iterdir(): # Acessar a pasta e enviar o contrato
+                    if validate_file(file):
+                        self.contracts.append(file)
+                        files_to_rename.append(file)
 
-                if enviar_file.exists():
-                    rename_file_flag(enviar_file)
-                    for file in process_folder.iterdir(): # Acessar a pasta e enviar o contrato
-                        validated = validate_file(file)
-                        if validated:
-                            self.contracts.append(validated)
+        
+        return files_to_rename
+
 
     def run_app(self):
-        self.navigation()
+        files_to_rename = self.navigation()
 
         try:
             if self.contracts:
                 self.sender.format_email(self.contracts)
                 self.sender.send_email()
+
+                for file in files_to_rename:
+                    rename_sent_file(file)
+                    
                 print('Email enviado.')
         except Exception as e:
             print(f'{e}: Falha ao enviar os contratos.')

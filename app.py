@@ -1,80 +1,45 @@
-from pathlib import Path
-from smtplib import SMTP
-from email.message import EmailMessage
-
-from config import regex, BASE_DIR, CREDENTIALS
-
-basepath = BASE_DIR
+from config import BASE_DIR, CREDENTIALS
+from email_service import EmailService
+from utils import validate_file, rename_file_flag
 
 
-def validate_file(file: Path):
-    if not file.is_file():
-        return None
+class App:
 
-    if not file.suffix.lower() == '.pdf':
-        return None
-    
-    if not regex.fullmatch(file.stem):
-        return None
-    
-    return file
+    def __init__(self):
+        self.basepath = BASE_DIR
+        self.sender = EmailService()
 
-def send_email(files):
-    msg = EmailMessage()
-    msg['From'] = CREDENTIALS['email']
-    msg['To'] = CREDENTIALS['destino']
-    msg['Subject'] = 'Envio de contrato'
-    msg.set_content("""Olá,
+        self.contracts = []
 
-            Segue em anexo o contrato assinado.
+    def navigation(self):
+        for modality in self.basepath.iterdir(): # Dispensas, aditivos, inex
+            if not modality.is_dir():
+                continue
 
-            Atenciosamente,
-            Prefeitura Municipal
-            """)
+            for process_folder in modality.iterdir(): # 001 - Processo X, 002 - Processo Y
+                if not process_folder.is_dir():
+                    continue
 
-    for file in files:
-        with file.open('rb') as f:
-            msg.add_attachment(
-                f.read(),
-                maintype='application',
-                subtype='pdf',
-                filename=file.name
-            )
+                enviar_file = process_folder / 'ENVIAR.txt'
 
-    with SMTP('smtp.gmail.com', 587) as server:
-        server.starttls()
-        server.login(
-            CREDENTIALS['email'], 
-            CREDENTIALS['senha_app']
-            )
-        server.send_message(msg)
+                if enviar_file.exists():
+                    rename_file_flag(enviar_file)
+                    for file in process_folder.iterdir(): # Acessar a pasta e enviar o contrato
+                        validated = validate_file(file)
+                        if validated:
+                            self.contracts.append(validated)
 
-def rename_file_flag(file: Path):
-    file.rename(file.with_name('ENVIADO.txt'))
-    
+    def run_app(self):
+        self.navigation()
+        
+        try:
+            if self.contracts:
+                self.sender.format_email(self.contracts)
+                self.sender.send_email()
+                print('Email enviado.')
+        except Exception as e:
+            print(f'{e}: Falha ao enviar os contratos.')
 
-contracts = []
-
-for modality in basepath.iterdir(): # Dispensas, aditivos, inex
-    if not modality.is_dir():
-        continue
-
-    for process_folder in modality.iterdir(): # 001 - Processo X, 002 - Processo Y
-        if not process_folder.is_dir():
-            continue
-
-        enviar_file = process_folder / 'ENVIAR.txt'
-
-        if enviar_file.exists():
-            rename_file_flag(enviar_file)
-            for file in process_folder.iterdir(): # Acessar a pasta e enviar o contrato
-                validated = validate_file(file)
-                if validated:
-                    contracts.append(validated)
-
-try:
-    if contracts:
-        send_email(contracts)
-        print('Email enviado.')
-except Exception:
-    print(f'Falha ao enviar os contratos.')
+if __name__ == '__main__':
+    app = App()
+    app.run_app()
